@@ -8,11 +8,12 @@ set(LLVM_CONFIG "llvm-config-3.2")
 
 execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE LLVM_CXX_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${LLVM_CONFIG} --ldflags OUTPUT_VARIABLE LLVM_LINKER_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${LLVM_CONFIG} --includedir OUTPUT_VARIABLE LLVM_INCLUDE_FLAGS OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions("${LLVM_CXX_FLAGS} -fexceptions")
 set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${LLVM_LINKER_FLAGS}")
 set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} ${LLVM_LINKER_FLAGS}")
 
-include_directories("include" "src" "../gmock-1.6.0/fused-src")
+include_directories("include" "src" "../gmock-1.6.0/fused-src" ${LLVM_INCLUDE_FLAGS})
 link_directories("${PROJECT_SOURCE_DIR}/../gmock-1.6.0/build/gtest")
 link_directories("${PROJECT_SOURCE_DIR}/../gmock-1.6.0/build")
 
