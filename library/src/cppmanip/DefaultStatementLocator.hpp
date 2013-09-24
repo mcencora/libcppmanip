@@ -16,6 +16,8 @@ public:
         : getStmtRange(getStmtRange), selection(selection) { }
     virtual clang::StmtRange findStatementsInFunction(const clang::FunctionDecl& decl);
 private:
+    clang::StmtRange findStatementsInCompoundStatements(clang::SourceManager& srcMgr, clang::CompoundStmt& compoundStmt);
+    clang::StmtRange tryNestedCompoundStatements(clang::SourceManager& srcMgr, clang::Stmt& stmt);
     GetStmtRange getStmtRange;
     LocationRange selection;
 };

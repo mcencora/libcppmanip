@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <clang/AST/Stmt.h>
+#include <clang/AST/StmtCXX.h>
 #include <boost/next_prior.hpp>
 
 using namespace testing;
@@ -66,6 +67,43 @@ TEST_F(DefaultStatementLocatorTest, should_return_an_empty_range_when_no_stateme
     expectGetRangeForStmtAndReturn(1, { rowCol(2, 0), rowCol(2, 6) });
     auto stmts = locator->findStatementsInFunction(*function->getDecl());
     ASSERT_TRUE(stmts.empty());
+}
+
+TEST_F(DefaultStatementLocatorTest, should_return_the_nested_statement_from_a_try_block)
+{
+    parseSourceAndCreateLocatorForSelection(
+        "void f() {\ntry { int a; } catch(...) { } }", { rowCol(1, 6), rowCol(1, 13) });
+    expectGetRangeForStmtAndReturn(0, { rowCol(1, 0), rowCol(1, 15) });
+
+    auto& sourceManager = function->getDecl()->getASTContext().getSourceManager();
+    auto intDecl = *clang::dyn_cast<clang::CXXTryStmt>(nthStmt(0))->getTryBlock()->body_begin();
+    EXPECT_CALL(*this, getStmtRange(Ref(sourceManager), Ref(*intDecl)))
+        .WillRepeatedly(Return(LocationRange(rowCol(1, 6), rowCol(1, 13))));
+
+    auto stmts = locator->findStatementsInFunction(*function->getDecl());
+    ASSERT_EQ(1u, std::distance(begin(stmts), end(stmts)));
+    ASSERT_TRUE(*stmts == intDecl);
+}
+
+
+TEST_F(DefaultStatementLocatorTest, should_return_the_most_nested_statement)
+{
+    parseSourceAndCreateLocatorForSelection(
+        "void f() {\ntry {\nif (true) { int a; } else { int b; }\n} catch(...) { } }", { rowCol(2, 12), rowCol(2, 18) });
+    expectGetRangeForStmtAndReturn(0, { rowCol(1, 0), rowCol(3, 16) }); // try
+
+    auto& sourceManager = function->getDecl()->getASTContext().getSourceManager();
+    auto ifStmt = *clang::dyn_cast<clang::CXXTryStmt>(nthStmt(0))->getTryBlock()->body_begin();
+    EXPECT_CALL(*this, getStmtRange(Ref(sourceManager), Ref(*ifStmt)))
+        .WillRepeatedly(Return(LocationRange(rowCol(2, 0), rowCol(2, 37))));
+
+    auto intDecl = *clang::dyn_cast<clang::IfStmt>(ifStmt)->getThen()->child_begin();
+    EXPECT_CALL(*this, getStmtRange(Ref(sourceManager), Ref(*intDecl)))
+        .WillRepeatedly(Return(LocationRange(rowCol(2, 12), rowCol(2, 18))));
+
+    auto stmts = locator->findStatementsInFunction(*function->getDecl());
+    ASSERT_EQ(1u, std::distance(begin(stmts), end(stmts)));
+    ASSERT_TRUE(*stmts == intDecl);
 }
 
 }
