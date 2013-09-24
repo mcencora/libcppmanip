@@ -37,6 +37,16 @@ public:
         getRangeTillSemicolon(s);
         return false;
     }
+    bool VisitCXXTryStmt(clang::CXXTryStmt *s)
+    {
+        getRange(s);
+        return false;
+    }
+    bool VisitCompoundStmt(clang::CompoundStmt *s)
+    {
+        getRange(s);
+        return false;
+    }
 
     boost::optional<clang::SourceRange> getRange() const { return range; }
 private:
